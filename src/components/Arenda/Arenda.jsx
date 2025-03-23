@@ -5,16 +5,23 @@ import { toast, Toaster } from "react-hot-toast";
 import s from "./Arenda.module.scss";
 import Korzina from "../Korzina/Korzina";
 
-const Arenda = ({ bikes = [] }) => {
+const Arenda = () => {
   const [showAll, setShowAll] = useState(false);
   const [hoveredBike, setHoveredBike] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [cartItems, setCartItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [bikes, setBikes] = useState([]);
   const [visibleBikes, setVisibleBikes] = useState([]);
 
   useEffect(() => {
     AOS.init({ duration: 1000, once: true });
+
+    // Подтягиваем данные из product.json
+    fetch('/product.json')
+      .then((response) => response.json())
+      .then((data) => setBikes(data))
+      .catch((error) => console.error("Ошибка при загрузке данных:", error));
   }, []);
 
   useEffect(() => {
@@ -23,6 +30,16 @@ const Arenda = ({ bikes = [] }) => {
       if (window.innerWidth <= 1200) count = 3;
       if (window.innerWidth <= 950) count = 2;
       if (window.innerWidth <= 570) count = 1;
+
+      const filteredBikes = bikes
+        .filter((bike) =>
+          bike.title.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .filter(
+          (bike) =>
+            selectedCategory === "all" || bike.category === selectedCategory
+        );
+
       setVisibleBikes(showAll ? filteredBikes : filteredBikes.slice(0, count));
     };
 
@@ -33,7 +50,7 @@ const Arenda = ({ bikes = [] }) => {
 
   const handleAddToCart = (bike) => {
     setCartItems([...cartItems, bike]);
-    toast.success(`\"${bike.title}\" добавлен в корзину!`, {
+    toast.success(`"${bike.title}" добавлен в корзину!`, {
       position: "top-right",
       duration: 2000,
     });
@@ -42,14 +59,6 @@ const Arenda = ({ bikes = [] }) => {
   const handleCategoryChange = (event) => {
     setSelectedCategory(event.target.value);
   };
-
-  const filteredBikes = bikes
-    .filter((bike) =>
-      bike.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .filter(
-      (bike) => selectedCategory === "all" || bike.category === selectedCategory
-    );
 
   return (
     <section className={s.arenda}>
@@ -118,7 +127,7 @@ const Arenda = ({ bikes = [] }) => {
           )}
         </div>
 
-        {filteredBikes.length > 4 && (
+        {bikes.length > 4 && (
           <div className={s.toggleButton}>
             <button onClick={() => setShowAll(!showAll)}>
               {showAll ? "⬆️ Скрыть" : "⬇️ Показать еще"}
